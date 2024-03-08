@@ -1,0 +1,121 @@
+--- mach2.clj	2023-08-30 11:39:58.000000000 -0500
++++ mach2t.clj	2023-09-12 15:34:44.000000000 -0500
+@@ -17,8 +17,7 @@
+                :carry 0      :prev-carry 0
+                :disp 0       :upTr 1  :cy 0   :lastkey 0
+                :da 0
+-               :ram [
+-                     [0 0 0  0 0 0  0 0 0  0 0 0  0 0] ;; 0
++               :ram [[0 0 0  0 0 0  0 0 0  0 0 0  0 0] ;; 0
+                      [0 0 0  0 0 0  0 0 0  0 0 0  0 0]
+                      [0 0 0  0 0 0  0 0 0  0 0 0  0 0]
+                      [0 0 0  0 0 0  0 0 0  0 0 0  0 0]
+@@ -27,8 +26,7 @@
+                      [0 0 0  0 0 0  0 0 0  0 0 0  0 0]
+                      [0 0 0  0 0 0  0 0 0  0 0 0  0 0]
+                      [0 0 0  0 0 0  0 0 0  0 0 0  0 0] ;; 8
+-                     [0 0 0  0 0 0  0 0 0  0 0 0  0 0] ]
+-               })  )
++                     [0 0 0  0 0 0  0 0 0  0 0 0  0 0] ]   })  )
+ 
+ (defn keyrom ""     []     (swap! ms assoc :pc (:lastkey @ms) :upTr 1)  )
+ (defn disptoggle "" []     (swap! ms assoc :disp  (- 1 (:disp @ms))  )  )
+@@ -279,6 +277,69 @@
+       dstr) )   )
+ 
+ 
++(defn post-ex "print minimal trace info" [ pc ra wdv]
++  (let [rs    (bit-shift-right (- ra pc) 8)   ;; setrom    NOTE:  pre-ex values!
++        {:keys [:c :b :a :m :p :s :da :cy]} @ms  ] ;; safe access post-ex values
++
++    (cond
++    (= (bit-and wdv 1) 1) ;; block 1of8
++    (let [n  (bit-shift-right (bit-and wdv 2) 1)
++          pa (bit-shift-right (bit-and wdv 0x3fc) 2) ]
++      (printf "%1d.%03o\n" rs pc)  )  ;; jsb,goto
++
++    
++    (= (bit-and wdv 3) 2) ;; 2of8
++    (let [n   (bit-shift-right (bit-and wdv 0x3e0) 5)   ]
++      (case ([0 2 0 0, 1 1 1 1, 3 2 1 1, 3 0 1 1
++              0 4 1 0, 2 1 3 3, 3 5 3 3, 3 6 3 3] n)          
++        0  (printf "%1d.%03o\n" rs pc)
++        1  (printf "%1d.%03o  :c%s :cy %d\n" rs pc c cy) ;; dup 2x bk 8
++        2  (printf "%1d.%03o  :b%s :cy %d\n" rs pc b cy)
++        3  (printf "%1d.%03o  :a%s :cy %d\n" rs pc a cy) ;; dup bk 8
++        4  (printf "%1d.%03o  :b%s :c%s :cy %d\n" rs pc b c cy)
++        5  (printf "%1d.%03o  :a%s :b%s :cy %d\n" rs pc a b cy)
++        6  (printf "%1d.%03o  :a%s :c%s :cy %d\n" rs pc a c cy) )  )
++
++    
++    (= (bit-and wdv 0xF) 4)   ;; 3of8
++    (let [n  (bit-shift-right (bit-and wdv 0x30)  4)
++          pr (bit-shift-right (bit-and wdv 0x3c0) 6)]
++      (if (even? n)
++        (printf "%1d.%03o  :s %s%d :cy %d\n" rs pc s pr cy)
++        (printf "%1d.%03o\n" rs pc) )  )  ;; omit  tests,clears
++   
++    (= (bit-and wdv 0xF) 12)  ;; 4of8
++    (let [n  (bit-shift-right (bit-and wdv 0x30)  4)  ]
++      (if (odd? n)  ;; omit trace   setp,testp
++        (printf "%1d.%03o  :p %s\n" rs pc p )
++        (printf "%1d.%03o\n" rs pc) )  )
++   
++    (= (bit-and wdv 0x3f) 16) ;; 5of8
++    (printf "%1d.%03o\n" rs pc)               ;; select rom   keys -> rom addr
++
++    (= (bit-and wdv 0x3f) 24) ;; 6of8
++    (printf "%1d.%03o  :c%s  :p %s :cy %d\n" rs pc c p cy)  ;load constant %d 
++
++    (= (bit-and wdv 0x3ff) 0) ;; 7of8
++    (printf "%1d.%03o\n" rs pc)                         ;; no-op
++
++    (= (bit-and wdv 7) 0)     ;; 8of8
++    (let [n  (bit-shift-right (bit-and wdv 0x3f8) 3)]
++      (case n
++        5   (printf "%1d.%03o\n" rs pc)                    ;;disptoggle
++        6   (printf "%1d.%03o\n" rs pc)              ; ret
++        21  (printf "%1d.%03o  :c%s :m%s :cy %d\n" rs pc c m cy)   ; c exch m
++        37  (printf "%1d.%03o\n" rs pc)                    ; c -> stack  ??
++        53  (printf "%1d.%03o  :a%s :cy %d\n" rs pc a cy)          ; stack -> a
++        69  (printf "%1d.%03o\n" rs pc)                    ;; dispoff
++        78  (printf "%1d.%03o  :da %s\n" rs pc da)         ;c -> d adr
++        85  (printf "%1d.%03o  :c%s :cy %d\n" rs pc c cy)          ; m -> c
++        94  (printf "%1d.%03o\n" rs pc)                    ; c -> data   ??
++        95  (printf "%1d.%03o  :c%s :cy %d\n" rs pc c cy)  ; data -> c
++        101 (printf "%1d.%03o\n" rs pc)                    ; "down rotate"
++        117 (printf "%1d.%03o\n" rs pc) )   ) ;clear registers   ; case,let
++    ))  )
++
+ 
+ (defn run-instrs "run from  offset+pc until wait-loop" [rom ]
+   (loop []
+@@ -287,7 +348,10 @@
+       (swap! ms assoc :prev-carry (:carry @ms)  :carry 0
+              :pc (bit-and (inc pc) 255) )
+       
++      ;;(pre-ex...)  Assert we can do _all_ needed in  post-ex !
+       (decodEx (rom  ra) )
++      (post-ex  pc ra (rom ra) )
++      
+                       ;; wait-loop detected ---v  ==> suspend at checkpoint
+       (if (and (= upTr 1) (= 0 (:upTr @ms)))   0   (recur )) )  )  )
+ 
+@@ -318,7 +382,7 @@
+ (defn -main "simpler cli for interactive use case" [& args]
+   
+   (run-instrs rom)  ;; was (mc/run-instrs r/romV4)
+-  (println (disp) )  ;; was mc/disp
++  (printf "%s   (display)\n" (disp) )  ;; was mc/disp
+ 
+   (with-open [r (clojure.java.io/reader *in*) ]
+     (doseq [line (line-seq r)]
+@@ -327,7 +391,7 @@
+        (doseq [i (range (count vch))]
+            ;; was   mc/run-instr-seq   r/afmap
+          (reset! lastdisp  (run-instr-seq (afmap (vch i)))) )
+-       (println @lastdisp)
++       (printf "%s    (display)\n" @lastdisp)
+ 
+        ) )  )   )
+ 
