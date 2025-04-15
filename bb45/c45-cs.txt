@@ -1,0 +1,45 @@
+// key, alt legends from  m45.java/kc_lgnd
+
+{"1/x","y^x"},   {"ln","log"},  {"e^x","10^x"},  {"FIX","SCI"}, {"",""},
+{"x^2","sqrt x"},{"->P","->R"}, {"SIN","aSIN"},{"COS","aCOS"},{"TAN","aTAN"},
+{"x<>y","n!"}, {"RDN","x,s"},{"STO","->D.MS"},{"RCL","D.MS->"}, {"%","delta %"},
+
+    {"ENTER","DEG"}, {"CHS","RAD"}, {"EEX","GRD"}, {"CLX","CLEAR"},
+    {"-",""},        {"7","cm/in"}, {"8","kg/lb"}, {"9","ltr/gal"},
+    {"+",""},        {"4",""},      {"5",""},      {"6",""},
+    {"x",""},        {"1",""},      {"2",""},      {"3",""},
+    {"/",""},        {"0","LASTX"}, {".","Pi"},    {"SIG+","SIG-"} };
+
+
+// key (single-char) abbreviations from  m45.java/ac 
+//       _____     ____    ____    ____
+//  \l^f'wpsctar[]% ze;-789+456*123/0.o
+//  -----     -----    ----    ----
+
+
+
+// combine into cheatsheet for entering HP45 cmds from keyboard
+
+    y^x   log   10^x   SCI
+    1/x    ln    e^x   FIX   gold
+      \     l      ^     f      '
+
+   sqrt   ->R   aSIN  aCOS   aTAN
+    x^2   ->P    SIN   COS    TAN  
+      w     p      s    c       t
+
+     n!   x,s  ->DMS  DMS->  delta %
+   x<>y   RDN    STO  RCL    %
+      a     r      [    ]      %
+
+     DEG   RAD   GRD  CLEAR
+   ENTER   CHS   EEX  CLX 
+     " "     z     e    ;
+
+       -     7     8    9 
+       +     4     5    6
+       *     1     2    3
+ 
+          LSTX   Pi    SIG-
+       /     0    .    SIG+
+                         o
